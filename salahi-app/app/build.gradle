@@ -11,7 +11,7 @@ android {
         versionName '1.1'
         buildConfigField 'double', 'LAT', project.property('noor.lat')
         buildConfigField 'double', 'LON', project.property('noor.lon')
-        buildConfigField 'int', 'METHOD', project.property('noor.method')
+        buildConfigField 'String', 'METHOD', "\"${project.property('noor.method')}\""
     }
 
     // One small app per shortcut, so each gets its own tile on the home screen.

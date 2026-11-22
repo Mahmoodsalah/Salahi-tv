@@ -18,7 +18,7 @@ import java.util.Locale;
  */
 final class Noor {
     static final double LAT = @LAT@, LON = @LON@;
-    static final int METHOD = @METHOD@; // Aladhan calculation method
+    static final String METHOD = "@METHOD@"; // Aladhan method, optionally with custom angles
 
     private static final String[] MONTHS = {"محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى",
             "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"};

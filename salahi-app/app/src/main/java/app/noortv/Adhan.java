@@ -90,19 +90,20 @@ public class Adhan extends BroadcastReceiver {
         c.getSystemService(AlarmManager.class).setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pi);
     }
 
-    /** "HH:mm" for Fajr..Isha on that day, from Aladhan (noor.method), cached per day for offline days. */
+    /** "HH:mm" for Fajr..Isha on that day, from Aladhan (noor.method), cached per day and method for offline days. */
     private static String[] times(Context c, Calendar day) {
         String date = String.format(Locale.US, "%02d-%02d-%d", day.get(Calendar.DAY_OF_MONTH),
                 day.get(Calendar.MONTH) + 1, day.get(Calendar.YEAR));
+        String key = date + "|" + BuildConfig.METHOD;
         SharedPreferences p = c.getSharedPreferences("adhan", Context.MODE_PRIVATE);
-        String cached = p.getString(date, null);
+        String cached = p.getString(key, null);
         if (cached != null) return cached.split(",");
         try {
             JSONObject t = new JSONObject(get("https://api.aladhan.com/v1/timings/" + date + "?latitude=" + LAT
                     + "&longitude=" + LON + "&method=" + BuildConfig.METHOD)).getJSONObject("data").getJSONObject("timings");
             String[] out = new String[KEYS.length];
             for (int i = 0; i < KEYS.length; i++) out[i] = t.getString(KEYS[i]).substring(0, 5);
-            p.edit().putString(date, String.join(",", out)).apply();
+            p.edit().putString(key, String.join(",", out)).apply();
             return out;
         } catch (Exception e) {
             return null;

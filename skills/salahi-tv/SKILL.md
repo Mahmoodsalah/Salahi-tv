@@ -54,7 +54,8 @@ description: ينضّف تلفزيون أندرويد تي في أو جوجل ت
 
 ### 7. الشاشة الجديدة
 - مدينته: خد المنطقة الزمنية من جهازه (`readlink /etc/localtime` أو `tzutil /g`)، وأكّد المدينة معاه. الإحداثيات من [Aladhan](https://aladhan.com) أو من معرفتك. طريقة الحساب: 4 أم القرى (السعودية)، 9 الكويت، 8 الخليج، 16 دبي، 10 قطر، 5 مصر، 3 رابطة العالم الإسلامي.
-- `python3 launcher-patch/apply.py ~/cleanyourtv <lat> <lon> <method> "<اسم المدينة>"`
+- **طابق المواقيت مع بلده:** اسأله عن وقت الفجر والعشاء النهارده في مسجده أو في التطبيق الرسمي لبلده، وقارنهم بنتيجة Aladhan. لو مختلفين، جرّب زوايا بدل الطريقة، بصيغة `99&methodSettings=<زاوية الفجر>,null,<زاوية العشاء>` (مثال: `99&methodSettings=19.5,null,18`)، لحد ما يطابقوا. ما تثبّتش وقت بإيدك، لأن المواقيت بتتغير كل يوم.
+- `python3 launcher-patch/apply.py ~/cleanyourtv <lat> <lon> "<method>" "<اسم المدينة>"`
 - ركّب الشاشة: اعمل بيئة بايثون لأدواتهم الأول (`python3 -m venv ~/cleanyourtv/tools/venv && ~/cleanyourtv/tools/venv/bin/pip install -r ~/cleanyourtv/tools/requirements.txt`، وعلى ويندوز المسار `tools/venv/Scripts`). وبعدها `cd ~/cleanyourtv && TV_HOST=<ip> bash launcher/build-and-install.sh`.
   - لو السكربت علّق عند أول سؤال للتلفزيون، أوقفه واستخدم اتصال adb المفتوح: `TV_ADB_BINARY=<مسار adb> TV_HOST=<ip>:5555`.
   - لو ظهر إن `com.google.android.tungsten.setupwraith` ماسك الشاشة الرئيسية: اتأكد إن الواي فاي مش تابع له، عطّله بإذنه، وأعد التركيب.
@@ -74,7 +75,7 @@ description: ينضّف تلفزيون أندرويد تي في أو جوجل ت
 
 ### 8. الكروت والأذان
 - اسأله: بيحب أنهي مؤذن؟ دوّر على يوتيوب (`yt-dlp "ytsearch8:أذان <الاسم>"`)، واختار أذان كامل (3-4 دقايق) من قناة موثوقة، وبعدها `tools/fetch-adhan.sh <الرابط>`. دوّر كمان على أذان فجر فيه «الصلاة خير من النوم»، وبعدها `tools/fetch-adhan.sh <الرابط> fajr`. ابعتله الملفات يسمعها قبل التركيب. لو مش عايز صوت، تجاوزها. ومن غير تسجيل فجر، الفجر بيبقى شريط من غير صوت.
-- عدّل `salahi-app/gradle.properties` بمدينته (`noor.lat` و`noor.lon` و`noor.method`).
+- عدّل `salahi-app/gradle.properties` بمدينته (`noor.lat` و`noor.lon` و`noor.method`)، بنفس قيمة الطريقة اللي استخدمتها في الخطوة 7.
 - نزّل صوت الكروت على جهازه: `tools/fetch-recitations.sh`. الصوت حوالي 120 ميجا ومش بيترفع على git.
 - `tools/install-noor.sh <ip>`
 

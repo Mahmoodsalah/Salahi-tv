@@ -4,6 +4,7 @@ weather beside the clock, no app name over the dock, and an Arabic prayer-times 
 
     python3 apply.py <cleanyourtv folder> <lat> <lon> <aladhan method> "<city name>"
 
+The method is an Aladhan number, or custom angles such as "99&methodSettings=19.5,null,18" (Fajr, Maghrib, Isha).
 Safe to run twice. Afterwards build and install the launcher and the prayer-times addon, then push a theme.
 """
 import pathlib
@@ -15,7 +16,9 @@ from xml.sax.saxutils import escape
 if len(sys.argv) != 6:
     sys.exit(__doc__)
 root, lat, lon, method, city = pathlib.Path(sys.argv[1]), *sys.argv[2:]
-float(lat), float(lon), int(method)  # fail early on a typo
+float(lat), float(lon)  # fail early on a typo
+if not re.fullmatch(r"\d+(&methodSettings=[\d.]+,(null|[\d.]+),(null|[\d.]+( ?min)?))?", method):
+    sys.exit(f"Bad Aladhan method: {method}")
 here = pathlib.Path(__file__).resolve().parent
 launcher = root / "launcher/app/src/main"
 java = launcher / "java/com/gathin/tvhome"
@@ -196,7 +199,7 @@ if 'android:maxLines="3"' not in block:
 
 cfg = addon / "res/values/config.xml"
 text = read(cfg)
-for name, value in (("latitude", lat), ("longitude", lon), ("place", escape(city)), ("method", method)):
+for name, value in (("latitude", lat), ("longitude", lon), ("place", escape(city)), ("method", escape(method))):
     text = re.sub(rf'(<string name="{name}"[^>]*>)[^<]*(</string>)',
                   lambda g, v=value: g.group(1) + v + g.group(2), text)
 # The Kahf card plays the adhan; a second alert from this addon would interrupt whatever is on screen.
