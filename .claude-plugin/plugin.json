@@ -1,0 +1,8 @@
+{
+  "name": "salahi-tv",
+  "version": "1.2.0",
+  "description": "نضّف تلفزيون أندرويد/جوجل تي في من الإعلانات، وخليه يأذّن ويذكّرك بالصلاة، والقرآن والأذكار من غير إنترنت.",
+  "author": { "name": "Mahmood Salah" },
+  "homepage": "https://github.com/Mahmoodsalah/Salahi-tv",
+  "license": "MIT"
+}

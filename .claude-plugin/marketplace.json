@@ -1,0 +1,7 @@
+{
+  "name": "salahi-tv",
+  "owner": { "name": "Mahmood Salah" },
+  "plugins": [
+    { "name": "salahi-tv", "source": "./", "description": "نضّف تلفزيونك وخليه يأذّن ويذكّرك بالصلاة", "version": "1.2.0" }
+  ]
+}

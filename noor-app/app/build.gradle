@@ -1,0 +1,74 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'app.noortv'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 26
+        targetSdk 34
+        versionCode 6
+        versionName '1.1'
+        buildConfigField 'double', 'LAT', project.property('noor.lat')
+        buildConfigField 'double', 'LON', project.property('noor.lon')
+        buildConfigField 'int', 'METHOD', project.property('noor.method')
+    }
+
+    // One small app per shortcut, so each gets its own tile on the home screen.
+    flavorDimensions = ['item']
+    productFlavors {
+        kahf {
+            dimension 'item'
+            applicationId 'app.noortv.kahf'
+            resValue 'string', 'app_name', 'سورة الكهف'
+            resValue 'string', 'reciter', 'ماهر المعيقلي'
+            buildConfigField 'boolean', 'REMINDERS', 'true'
+        }
+        baqara {
+            dimension 'item'
+            applicationId 'app.noortv.baqara'
+            resValue 'string', 'app_name', 'سورة البقرة'
+            resValue 'string', 'reciter', 'أحمد النفيس'
+            buildConfigField 'boolean', 'REMINDERS', 'false'
+        }
+        sabah {
+            dimension 'item'
+            applicationId 'app.noortv.sabah'
+            resValue 'string', 'app_name', 'أذكار الصباح'
+            resValue 'string', 'reciter', 'أحمد النفيس'
+            buildConfigField 'boolean', 'REMINDERS', 'false'
+        }
+        masa {
+            dimension 'item'
+            applicationId 'app.noortv.masa'
+            resValue 'string', 'app_name', 'أذكار المساء'
+            resValue 'string', 'reciter', 'أحمد النفيس'
+            buildConfigField 'boolean', 'REMINDERS', 'false'
+        }
+        ruqya {
+            dimension 'item'
+            applicationId 'app.noortv.ruqya'
+            resValue 'string', 'app_name', 'الرقية الشرعية'
+            resValue 'string', 'reciter', 'أحمد النفيس'
+            buildConfigField 'boolean', 'REMINDERS', 'false'
+        }
+    }
+
+    buildFeatures { buildConfig true }
+
+    // MediaPlayer opens the recitation straight from the APK, which needs it stored uncompressed.
+    androidResources { noCompress 'mp3' }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Sideloaded over ADB like the launcher: signed with the debug key.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
