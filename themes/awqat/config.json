@@ -20,6 +20,7 @@
   "glass_style": "glass",
   "ambient_glow": false,
   "columns": 6,
-  "show_network_pill": false,
+  "show_network_pill": true,
+  "icon_only_buttons": true,
   "icon_only_inputs": true
 }
