@@ -231,6 +231,68 @@ patch(java / "MainActivity.java",
       "    /** Keeps the divider as tall as the date, next-prayer and weather lines beside it. */\n",
       "private void alignButtonsWithDateLine")
 
+# Cards draw their text live when the Cairo font is on this computer; otherwise they keep their banner images.
+FONT_DIRS = (pathlib.Path.home() / "AppData/Local/Microsoft/Windows/Fonts", pathlib.Path("C:/Windows/Fonts"),
+             pathlib.Path.home() / "Library/Fonts", pathlib.Path("/Library/Fonts"),
+             pathlib.Path.home() / ".local/share/fonts", pathlib.Path.home() / ".fonts")
+for font, asset in (("Cairo-Bold.ttf", "card_title.ttf"), ("Cairo-SemiBold.ttf", "card_subtitle.ttf")):
+    found = next((d / font for d in FONT_DIRS if (d / font).exists()), None)
+    if found:
+        (launcher / "assets").mkdir(exist_ok=True)
+        shutil.copyfile(found, launcher / "assets" / asset)
+write(java / "CardArt.java", read(here / "CardArt.java"))
+write(java / "HiRes.java", read(here / "HiRes.java"))
+
+# Top-bar icons go through HiRes too.
+patch(java / "MainActivity.java",
+      "        if (cfg.iconOnlyInputs) makeIconOnly((TextView) btnInputs);\n",
+      "        if (cfg.iconOnlyInputs) makeIconOnly((TextView) btnInputs);\n"
+      "        HiRes.apply((TextView) btnInputs);\n"
+      "        HiRes.apply(btnWifi);\n"
+      "        HiRes.apply((TextView) btnSettings);\n",
+      "HiRes.apply((TextView) btnSettings);")
+
+patch(java / "MainActivity.java",
+      "                btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);\n",
+      "                btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);\n"
+      "                HiRes.apply(btnWifi);\n",
+      "                HiRes.apply(btnWifi);\n")
+
+patch(java / "MainActivity.java",
+      "            logo.setBounds(0, 0, size, size);\n",
+      "            logo = new HiRes(logo);\n"
+      "            logo.setBounds(0, 0, size, size);\n",
+      "logo = new HiRes(logo);")
+
+patch(java / "AppAdapter.java",
+      "    private Drawable loadBanner(PackageManager pm, ResolveInfo ri) {\n",
+      "    private Drawable loadBanner(PackageManager pm, ResolveInfo ri) {\n"
+      "        Drawable art = CardArt.of(ctx, pm, ri.activityInfo.packageName);\n"
+      "        if (art != null) return art;\n",
+      "CardArt.of(")
+
+# Top-bar icons: 27dp is 1.5x their 24-unit grid on a 720p TV, so their edges land on whole pixels.
+for icon in ("ic_input", "ic_wifi", "ic_ethernet", "ic_settings"):
+    patch(launcher / f"res/drawable/{icon}.xml", 'android:width="22dp" android:height="22dp"',
+          'android:width="27dp" android:height="27dp"', 'android:width="27dp"')
+
+patch(java / "MainActivity.java",
+      "        int pad = Math.round(10 * density);\n        pill.setPaddingRelative(pad, 0, pad, 0);\n",
+      "        int pad = Math.round(7.5f * density);\n        pill.setPaddingRelative(pad, 0, pad, 0);\n",
+      "int pad = Math.round(7.5f * density);")
+
+patch(java / "MainActivity.java",
+      "        int size = Math.round(22 * density);\n        for (String pkg : packages) {\n",
+      "        int size = Math.round(27 * density);\n        for (String pkg : packages) {\n",
+      "int size = Math.round(27 * density);")
+
+patch(java / "MainActivity.java",
+      "            button.setCompoundDrawableTintList(null);\n",
+      "            button.setCompoundDrawableTintList(null);\n"
+      "            int inset = Math.round(7.5f * density);\n"
+      "            button.setPaddingRelative(inset, 0, inset, 0);\n",
+      "int inset = Math.round(7.5f * density);")
+
 layout = launcher / "res/layout/activity_main.xml"
 text = read(layout)
 m = re.search(r'android:id="@\+id/shamsiDate".*?/>', text, re.S)

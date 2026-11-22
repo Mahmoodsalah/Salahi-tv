@@ -24,6 +24,7 @@ description: ينضّف تلفزيون أندرويد تي في أو جوجل ت
 - قوله في سطر إيه الناقص، واستأذن مرة واحدة وثبّته. على الماك: `brew install android-platform-tools openjdk@17 android-commandlinetools yt-dlp ffmpeg` وبعدها `sdkmanager`. على ويندوز: `winget` لـ`Google.PlatformTools` و`EclipseAdoptium.Temurin.17.JDK` و`Gyan.FFmpeg`، وحمّل command-line tools من Google. لو `sdkmanager` قال إنه اتبدل، استخدم `android sdk install platforms/android-34 build-tools/34.0.0`.
 - نزّل CleanYourTV على النسخة المجرّبة مع الباتش: `git clone https://github.com/Gathin23/cleanyourtv ~/cleanyourtv && git -C ~/cleanyourtv checkout f63a1ebcdcd63aae1ec1b6f62aa4d2a6858c116b`.
 - على ويندوز، استخدم `python` لو `python3` بيفتح نسخة قديمة، واضبط `JAVA_HOME` و`ANDROID_HOME` قبل أي build.
+- خط **Cairo**: لو مش متثبت على جهازه، نزّله من [Google Fonts](https://fonts.google.com/specimen/Cairo) (رخصة OFL) وثبّته بإذنه. بيه التلفزيون بيرسم كلام الكروت مباشرة بأوضح شكل، ومن غيره الكروت بتتعرض كصور.
 
 ### 2. خيارات المطوّر في التلفزيون (الخطوة الوحيدة اللي بيعملها بإيده)
 - الإعدادات ← **Device Preferences** أو **System** ← **About** ← دوس OK على **Android TV OS Build** أو **Build** 7 مرات لحد ما يظهر «You are now a developer».
