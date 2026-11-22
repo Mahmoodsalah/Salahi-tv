@@ -149,7 +149,7 @@ patch(addon / "java/com/majnioui/tv/prayer/MainActivity.java",
       "R.drawable.screen_bg")
 
 (addon / "res/drawable-nodpi").mkdir(exist_ok=True)
-shutil.copyfile(here.parent / "noor-app/app/src/main/res/drawable-nodpi/player_bg.jpg",
+shutil.copyfile(here.parent / "salahi-app/app/src/main/res/drawable-nodpi/player_bg.jpg",
                 addon / "res/drawable-nodpi/screen_bg.jpg")
 shutil.copyfile(here / "prayer-banner.png", addon / "res/drawable-xhdpi/banner.png")
 print("Salahi TV patch applied:", lat, lon, "method", method)

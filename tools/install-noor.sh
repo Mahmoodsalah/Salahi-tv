@@ -5,7 +5,7 @@
 # Usage: tools/install-noor.sh <tv-ip>
 set -e
 D="$1:5555"; [ -n "$1" ] || { echo "usage: $0 <tv-ip>"; exit 1; }
-cd "$(dirname "$0")/../noor-app"
+cd "$(dirname "$0")/../salahi-app"
 for f in kahf baqara sabah masa ruqya; do
   [ -s "app/src/$f/assets/recitation.mp3" ] || { echo "missing $f audio: run tools/fetch-recitations.sh first"; exit 1; }
 done

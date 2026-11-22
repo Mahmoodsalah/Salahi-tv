@@ -71,7 +71,7 @@ description: ينضّف تلفزيون أندرويد تي في أو جوجل ت
 
 ### 8. الكروت والأذان
 - اسأله: بيحب أنهي مؤذن؟ دوّر على يوتيوب (`yt-dlp "ytsearch8:أذان <الاسم>"`)، واختار أذان كامل (3-4 دقايق) من قناة موثوقة، وبعدها `tools/fetch-adhan.sh <الرابط>`. ابعتله الملف يسمعه قبل التركيب. لو مش عايز صوت، تجاوزها.
-- عدّل `noor-app/gradle.properties` بمدينته (`noor.lat` و`noor.lon` و`noor.method`).
+- عدّل `salahi-app/gradle.properties` بمدينته (`noor.lat` و`noor.lon` و`noor.method`).
 - نزّل صوت الكروت على جهازه: `tools/fetch-recitations.sh`. الصوت حوالي 120 ميجا ومش بيترفع على git.
 - `tools/install-noor.sh <ip>`
 

@@ -3,7 +3,7 @@
 # The audio stays out of git. MP3 because some TV firmware refuses M4A files.
 # Usage: tools/fetch-recitations.sh
 set -e
-cd "$(dirname "$0")/../noor-app/app/src"
+cd "$(dirname "$0")/../salahi-app/app/src"
 TMP=$(mktemp -d)
 trap 'rm -rf "${TMP:?}"' EXIT
 for item in kahf:9k1U0aGQRNA baqara:9HW7j9lZZTU sabah:fD4uDIoCn3M masa:rQnNno3Do60 ruqya:BVtCjMyJ320; do
