@@ -10,7 +10,10 @@ Safe to run twice. Afterwards build and install the launcher and the prayer-time
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
+import tempfile
+import time
 from xml.sax.saxutils import escape
 
 if len(sys.argv) != 6:
@@ -45,6 +48,49 @@ def patch(path, old, new, done_marker):
     if old not in text:
         sys.exit(f"Could not find the spot to change in {path} - use the CleanYourTV commit named in SKILL.md.")
     write(path, text.replace(old, new, 1))
+
+
+BANNER_PAGE = """<!doctype html><meta charset="utf-8"><style>html,body{margin:0;width:320px;height:180px;overflow:hidden}
+.b{width:320px;height:180px;position:relative;direction:rtl;color:#fff;font-family:Cairo,"Segoe UI",Tahoma,sans-serif;
+background:radial-gradient(circle at 72% 22%,#1f8a63,#0c3d2f 78%)}
+.t{position:absolute;right:24px;top:38px;font-weight:700;font-size:36px;line-height:1.1;white-space:nowrap}
+.s{position:absolute;right:24px;top:90px;font-weight:600;font-size:25px;line-height:1.2;white-space:nowrap}</style>
+<div class="b"><div class="t">@NAME@</div><div class="s">@PLACE@</div></div>"""
+
+
+def render_banner(name, place, out):
+    """Draws the card with the city under its name. False when no browser or ffmpeg is there to draw it."""
+    browsers = [shutil.which(b) for b in ("msedge", "google-chrome", "chromium", "chrome")] + [
+        "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+        "C:/Program Files/Google/Chrome/Application/chrome.exe",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
+    browser = next((b for b in browsers if b and pathlib.Path(b).exists()), None)
+    ffmpeg = shutil.which("ffmpeg")
+    if not browser or not ffmpeg:
+        return False
+    tmp = pathlib.Path(tempfile.mkdtemp())
+    try:
+        page, raw = tmp / "banner.html", tmp / "raw.png"
+        page.write_text(BANNER_PAGE.replace("@NAME@", escape(name)).replace("@PLACE@", escape(place)), encoding="utf-8")
+        # Headless browsers keep a minimum window height, so shoot a square and crop it to the banner.
+        subprocess.run([browser, "--headless=new", "--disable-gpu", "--no-first-run", "--hide-scrollbars",
+                        "--force-device-scale-factor=2",
+                        "--window-size=320,320", f"--user-data-dir={(tmp / 'profile').as_posix()}",
+                        f"--screenshot={raw.as_posix()}", page.as_uri()],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        for _ in range(10):  # the browser can return a moment before the file is written
+            if raw.exists() and raw.stat().st_size:
+                break
+            time.sleep(1)
+        subprocess.run([ffmpeg, "-nostdin", "-v", "error", "-y", "-i", str(raw), "-vf", "crop=640:360:0:0",
+                        "-frames:v", "1", str(out)],
+                       check=True, timeout=30)
+        return True
+    except (OSError, subprocess.SubprocessError):
+        return False
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 noor = read(here / "Noor.java").replace("@LAT@", lat).replace("@LON@", lon).replace("@METHOD@", method)
@@ -227,5 +273,8 @@ patch(addon / "java/com/majnioui/tv/prayer/MainActivity.java",
 (addon / "res/drawable-nodpi").mkdir(exist_ok=True)
 shutil.copyfile(here.parent / "salahi-app/app/src/main/res/drawable-nodpi/player_bg.jpg",
                 addon / "res/drawable-nodpi/screen_bg.jpg")
-shutil.copyfile(here / "prayer-banner.png", addon / "res/drawable-xhdpi/banner.png")
+banner = addon / "res/drawable-xhdpi/banner.png"
+if not render_banner(ARABIC_NAME, city, banner):
+    shutil.copyfile(here / "prayer-banner.png", banner)
+    print("Note: no browser or ffmpeg found, so the prayer card shows no city name.")
 print("Salahi TV patch applied:", lat, lon, "method", method)
