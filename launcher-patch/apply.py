@@ -109,6 +109,79 @@ patch(java / "AppAdapter.java",
       "    static final float NEXT_ROW_HIDDEN_DP = 24;\n",
       "NEXT_ROW_HIDDEN_DP")
 
+patch(launcher / "AndroidManifest.xml",
+      '        <package android:name="com.tcl.settings" />',
+      '        <package android:name="com.tcl.settings" />\n'
+      '        <package android:name="com.google.android.katniss" />',
+      'com.google.android.katniss')
+
+# The Assistant has no launcher entry, so its top-bar button opens it through the system action.
+patch(java / "MainActivity.java",
+      "            if (launch == null) launch = pm.getLaunchIntentForPackage(pkg);\n",
+      "            if (launch == null) launch = pm.getLaunchIntentForPackage(pkg);\n"
+      "            if (launch == null && \"com.google.android.katniss\".equals(pkg)) {\n"
+      "                launch = new Intent(Intent.ACTION_ASSIST).setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);\n"
+      "            }\n",
+      "Intent.ACTION_ASSIST")
+
+# The Assistant button: its own logo, first in the bar, and the left end for the remote's focus.
+shutil.copyfile(here / "ic_assistant.xml", launcher / "res/drawable/ic_assistant.xml")
+
+patch(java / "MainActivity.java",
+      "                logo = info.loadIcon(pm);\n",
+      "                logo = \"com.google.android.katniss\".equals(pkg)\n"
+      "                        ? getDrawable(R.drawable.ic_assistant) : info.loadIcon(pm);\n",
+      "R.drawable.ic_assistant")
+
+patch(java / "MainActivity.java",
+      "            bar.addView(button, bar.indexOfChild(getResources().getBoolean(R.bool.rtl_menu_bar) ? btnVpn : btnWifi));\n",
+      "            if (\"com.google.android.katniss\".equals(pkg)) {\n"
+      "                bar.addView(button, getResources().getBoolean(R.bool.rtl_menu_bar) ? bar.getChildCount() : 0);\n"
+      "                assistantButton = button;\n"
+      "            } else {\n"
+      "                bar.addView(button, bar.indexOfChild(getResources().getBoolean(R.bool.rtl_menu_bar) ? btnVpn : btnWifi));\n"
+      "            }\n",
+      "assistantButton = button;")
+
+patch(java / "MainActivity.java",
+      "    private final List<View> topAppButtons = new ArrayList<>();\n",
+      "    private final List<View> topAppButtons = new ArrayList<>();\n"
+      "    private View assistantButton;\n",
+      "private View assistantButton;")
+
+patch(java / "MainActivity.java",
+      "            int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();\n",
+      "            int firstButton = assistantButton != null ? assistantButton.getId()\n"
+      "                    : btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();\n",
+      "assistantButton != null ? assistantButton.getId()")
+
+patch(java / "MainActivity.java",
+      "            stretchDividerToDateColumn();\n",
+      "            stretchDividerToDateColumn();\n"
+      "            alignButtonsWithDateLine();\n",
+      "alignButtonsWithDateLine();")
+
+patch(java / "MainActivity.java",
+      "    /** Keeps the divider as tall as the date, next-prayer and weather lines beside it. */\n",
+      "    /** Keeps the top buttons level with the date line, clear of the wallpaper's moon. */\n"
+      "    private void alignButtonsWithDateLine() {\n"
+      "        TextView dateLine = findViewById(R.id.shamsiDate);\n"
+      "        View buttons = findViewById(R.id.topButtons);\n"
+      "        ViewGroup header = (ViewGroup) buttons.getParent();\n"
+      "        Runnable align = () -> {\n"
+      "            if (dateLine.getLayout() == null) return;\n"
+      "            int lineBottom = dateLine.getLayout().getLineBaseline(0) + dateLine.getLayout().getLineDescent(0);\n"
+      "            Rect line = new Rect(0, dateLine.getLayout().getLineTop(0), 0, lineBottom);\n"
+      "            header.offsetDescendantRectToMyCoords(dateLine, line);\n"
+      "            buttons.setTranslationY(line.centerY() - buttons.getTop() - buttons.getHeight() / 2f);\n"
+      "        };\n"
+      "        dateLine.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> align.run());\n"
+      "        buttons.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> align.run());\n"
+      "    }\n"
+      "\n"
+      "    /** Keeps the divider as tall as the date, next-prayer and weather lines beside it. */\n",
+      "private void alignButtonsWithDateLine")
+
 layout = launcher / "res/layout/activity_main.xml"
 text = read(layout)
 m = re.search(r'android:id="@\+id/shamsiDate".*?/>', text, re.S)

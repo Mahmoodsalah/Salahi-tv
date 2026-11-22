@@ -13,6 +13,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -34,9 +35,8 @@ import java.util.Calendar;
 import java.util.Locale;
 
 /**
- * The adhan at each prayer time for the city in gradle.properties. With the home screen up and nothing playing it plays the adhan in
- * res/raw (tools/fetch-adhan.sh) under a banner; while a film, a channel or HDMI is on it only shows the banner, so nothing is
- * cut off. Fajr is banner only: most adhan recordings lack «الصلاة خير من النوم». Only the Kahf shortcut runs it.
+ * The adhan at each prayer time for the city in gradle.properties. It plays in full over Home and apps, and only its
+ * opening phrase over HDMI or a channel. Fajr uses its own recording. Only the Kahf shortcut runs it.
  */
 public class Adhan extends BroadcastReceiver {
     static final String FIRE = "app.noortv.ADHAN";
@@ -48,11 +48,14 @@ public class Adhan extends BroadcastReceiver {
     private static final String DREAM = "android.service.dreams.DreamActivity";
     /** The TV's own app for HDMI and channels. */
     static final String INPUTS = "com.tcl.tv";
-    /** The recording's first natural pause, after the opening takbir. */
-    private static final int INPUT_CLIP_MS = 11_000;
+    private static final int BANNER_MS = 30_000;
+    private static final AudioAttributes ATTRIBUTES = new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();
 
     private static volatile MediaPlayer player;
     private static Runnable dismissBanner;
+    private static AudioManager audio;
+    private static AudioFocusRequest focus;
 
     /** Sets the alarm for the next prayer; fetches today's and tomorrow's times in the background. */
     static void schedule(Context c) {
@@ -114,44 +117,41 @@ public class Adhan extends BroadcastReceiver {
         schedule(app);
         if (!app.getSystemService(PowerManager.class).isInteractive()) return; // TV is off
         String top = topApp(app);
-        if (INPUTS.equals(top)) {
-            playOnInput(app, prayer);
-            return;
-        }
-        boolean idle = prayer != 0 && HOME.equals(top)
-                && !app.getSystemService(AudioManager.class).isMusicActive();
-        fire(app, prayer, idle);
+        if (INPUTS.equals(top)) playOnInput(app, prayer);
+        else playFull(app, prayer, HOME.equals(top));
     }
 
-    /** Banner always; the adhan itself only when play is true. */
-    static void fire(Context app, int prayer, boolean play) {
+    /** Fajr has its own recording for «الصلاة خير من النوم»; without one it stays silent. */
+    private static int recording(Context app, int prayer, boolean opening) {
+        String name = (prayer == 0 ? "adhan_fajr" : "adhan") + (opening ? "_clip" : "");
+        return app.getResources().getIdentifier(name, "raw", app.getPackageName());
+    }
+
+    private static void playFull(Context app, int prayer, boolean onHome) {
         String text = "🕌 حان الآن موعد أذان " + NAMES[prayer];
-        if (!play) {
-            banner(app, text, 30_000);
-            return;
-        }
-        int raw = app.getResources().getIdentifier("adhan", "raw", app.getPackageName());
-        if (raw == 0) {
-            banner(app, text, 30_000);
-            return;
-        }
+        int raw = recording(app, prayer, false);
         stop();
-        player = open(app, raw);
-        if (player == null) {
-            banner(app, text, 30_000);
+        MediaPlayer full = raw == 0 ? null : open(app, raw);
+        if (full == null) {
+            banner(app, text, BANNER_MS);
             return;
         }
-        player.setOnCompletionListener(mp -> stop());
-        player.start();
-        banner(app, text, player.getDuration(), true);
-        watch(app, player);
+        player = full;
+        audio = app.getSystemService(AudioManager.class);
+        // Transient focus pauses the app underneath and lets it resume when the adhan ends.
+        focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(ATTRIBUTES).build();
+        audio.requestAudioFocus(focus);
+        full.setOnCompletionListener(mp -> stop());
+        full.start();
+        banner(app, text, onHome ? full.getDuration() : BANNER_MS, onHome);
+        watch(app, full);
     }
 
     /** Over HDMI or a channel: a small line at the bottom and only the adhan's opening phrase. */
     private static void playOnInput(Context app, int prayer) {
         Reminder.showCompact(app, "🕌 حان الآن موعد أذان " + NAMES[prayer]);
-        if (prayer == 0) return;
-        int raw = app.getResources().getIdentifier("adhan", "raw", app.getPackageName());
+        int raw = recording(app, prayer, true);
         if (raw == 0) return;
         stop();
         MediaPlayer clip = open(app, raw);
@@ -159,25 +159,20 @@ public class Adhan extends BroadcastReceiver {
         player = clip;
         clip.setOnCompletionListener(mp -> stop());
         clip.start();
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (player == clip) stop();
-        }, INPUT_CLIP_MS);
     }
 
     private static MediaPlayer open(Context app, int raw) {
-        return MediaPlayer.create(app, raw, new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build(),
-                app.getSystemService(AudioManager.class).generateAudioSessionId());
+        return MediaPlayer.create(app, raw, ATTRIBUTES, app.getSystemService(AudioManager.class).generateAudioSessionId());
     }
 
-    /** Stops the adhan as soon as an app is opened over the home screen. */
+    /** Moving to HDMI or a channel mid-adhan ends it, since those only get the opening phrase. */
     private static void watch(Context app, MediaPlayer playing) {
         long since = System.currentTimeMillis();
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
             while (player == playing) {
                 SystemClock.sleep(1500);
-                if (appOpenedSince(app, since)) {
+                if (inputOpenedSince(app, since)) {
                     main.post(() -> {
                         if (player == playing) stop();
                     });
@@ -187,21 +182,22 @@ public class Adhan extends BroadcastReceiver {
         }, "adhan-watch").start();
     }
 
-    private static boolean appOpenedSince(Context c, long since) {
+    private static boolean inputOpenedSince(Context c, long since) {
         UsageEvents ev = c.getSystemService(UsageStatsManager.class).queryEvents(since, System.currentTimeMillis());
         UsageEvents.Event e = new UsageEvents.Event();
         while (ev.hasNextEvent()) {
             ev.getNextEvent(e);
-            if (e.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED
-                    && !DREAM.equals(e.getClassName()) && !HOME.equals(e.getPackageName())) {
-                return true;
-            }
+            if (e.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && INPUTS.equals(e.getPackageName())) return true;
         }
         return false;
     }
 
     private static void stop() {
         if (dismissBanner != null) dismissBanner.run();
+        if (focus != null) {
+            audio.abandonAudioFocusRequest(focus);
+            focus = null;
+        }
         if (player == null) return;
         try {
             player.stop();

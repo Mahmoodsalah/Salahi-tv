@@ -85,9 +85,9 @@ final class Noor {
         Calendar c = Calendar.getInstance();
         int now = c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(Calendar.MINUTE);
         for (int i = 0; i < p.length; i++) {
-            if (p[i] > now) return "🕌 " + PRAYERS_AR[i] + " بعد " + hm(p[i] - now);
+            if (p[i] > now) return prayerLine(PRAYERS_AR[i], p[i] - now);
         }
-        return "🕌 الفجر بعد " + hm(24 * 60 - now + p[0]); // after Isha: tomorrow's Fajr, close enough
+        return prayerLine("الفجر", 24 * 60 - now + p[0]); // after Isha: tomorrow's Fajr, close enough
     }
 
     /** "الأحد 22 نوفمبر 2026". */
@@ -95,6 +95,11 @@ final class Noor {
         Calendar c = Calendar.getInstance();
         return WEEKDAYS[c.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY] + " " + c.get(Calendar.DAY_OF_MONTH) + " "
                 + GREGORIAN_MONTHS[c.get(Calendar.MONTH)] + " " + c.get(Calendar.YEAR);
+    }
+
+    /** The icon stays on the left, like the weather line, with the Arabic isolated after it. */
+    private static String prayerLine(String name, int minutes) {
+        return "\u200E🕌 \u2067" + name + " بعد " + hm(minutes) + "\u2069";
     }
 
     private static String hm(int minutes) {

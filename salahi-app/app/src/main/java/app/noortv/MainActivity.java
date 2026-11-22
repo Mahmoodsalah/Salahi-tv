@@ -46,6 +46,7 @@ public class MainActivity extends Activity {
     private MediaPlayer player;
     private boolean prepared;
     private int ticks;
+    private boolean resumeAfterFocus;
 
     private TextView status;
     private TextView time;
@@ -98,6 +99,7 @@ public class MainActivity extends Activity {
     }
 
     private void close() {
+        resumeAfterFocus = false;
         ui.removeCallbacks(tick);
         audio.abandonAudioFocusRequest(focus);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -137,7 +139,13 @@ public class MainActivity extends Activity {
     }
 
     private void onFocusChange(int change) {
-        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) pause();
+        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            resumeAfterFocus = change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT && prepared && player.isPlaying();
+            pause();
+        } else if (change == AudioManager.AUDIOFOCUS_GAIN && resumeAfterFocus) {
+            resumeAfterFocus = false;
+            play();
+        }
     }
 
     private void play() {
