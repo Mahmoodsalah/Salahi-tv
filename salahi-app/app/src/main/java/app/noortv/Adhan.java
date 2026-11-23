@@ -50,6 +50,7 @@ public class Adhan extends BroadcastReceiver {
     static final String INPUTS = "com.tcl.tv";
     private static final int BANNER_MS = 30_000;
     private static final String ARMED = "armed";
+    private static final long MAX_LATE = 120_000;
     private static final AudioAttributes ATTRIBUTES = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();
 
@@ -85,7 +86,7 @@ public class Adhan extends BroadcastReceiver {
     }
 
     private static void set(Context c, long when, int prayer) {
-        Intent fire = new Intent(c, Adhan.class).setAction(FIRE).putExtra("p", prayer);
+        Intent fire = new Intent(c, Adhan.class).setAction(FIRE).putExtra("p", prayer).putExtra("at", when);
         PendingIntent pi = PendingIntent.getBroadcast(c, 1, fire,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         c.getSystemService(AlarmManager.class).setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pi);
@@ -124,6 +125,8 @@ public class Adhan extends BroadcastReceiver {
         Context app = c.getApplicationContext();
         int prayer = i.getIntExtra("p", 1);
         schedule(app);
+        long now = System.currentTimeMillis();
+        if (now - i.getLongExtra("at", now) > MAX_LATE) return; // a TV in deep sleep delivers the alarm when it wakes
         if (!app.getSystemService(PowerManager.class).isInteractive()) return; // TV is off
         String top = topApp(app);
         if (INPUTS.equals(top)) playOnInput(app, prayer);
