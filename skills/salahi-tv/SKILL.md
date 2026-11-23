@@ -79,6 +79,13 @@ description: ينضّف تلفزيون أندرويد تي في أو جوجل ت
 - عدّل `salahi-app/gradle.properties` بمدينته (`noor.lat` و`noor.lon` و`noor.method`)، بنفس قيمة الطريقة اللي استخدمتها في الخطوة 7.
 - نزّل صوت الكروت على جهازه: `tools/fetch-recitations.sh`. الصوت حوالي 120 ميجا ومش بيترفع على git.
 - `tools/install-noor.sh <ip>`
+- **اتأكد إن التلفزيون مش هيمنع الأذان.** بعض الشركات، زي TCL، بتمنع التطبيق المقفول إنه يشتغل بعد إعادة التشغيل أو من منبّهه. ولأن كل أذان هو اللي بيسجّل اللي بعده، أذان واحد ممنوع بيضيّع الأذانات اللي بعده. السكربت بيفتح الإذنين دول، واتأكد إن الاتنين `allow`. لو الأمر قال إن الإذن مش معروف، يبقى التلفزيون ماعندوش الحظر ده وكمّل:
+  ```sh
+  adb shell appops get app.noortv.kahf APP_AUTO_START
+  adb shell appops get app.noortv.kahf APP_ASSOC_START
+  adb shell "dumpsys alarm | grep -A1 app.noortv.ADHAN"
+  ```
+  الأمر التالت لازم يطلّع منبّه على وقت الصلاة الجاية.
 
 بيعمل إيه:
 - **على الشاشة الرئيسية:** الأذان كامل مع شريط «حان الآن موعد أذان…»، وشاشة التوقف ما بتقطعوش.
@@ -95,6 +102,11 @@ description: ينضّف تلفزيون أندرويد تي في أو جوجل ت
 - خليه يفتح كارت ويجرب OK ويمين وشمال، ويجرب HDMI والصوت.
 - **ريموت الموبايل:** خليه ينزّل تطبيق **Google TV** الرسمي ([Android](https://play.google.com/store/apps/details?id=com.google.android.videos) أو [iPhone](https://apps.apple.com/app/id746894884))، ويفتح زرار الريموت، ويختار تلفزيونه، ويكتب الرمز اللي ظاهر على الشاشة. بعدها يقدر يكتب بكيبورد الموبايل في أي خانة.
 - أعد تشغيل التلفزيون بإذنه، واتأكد إن الشاشة والتعطيلات ومنبّه الأذان ثابتين.
+- **جرّب أذان حقيقي والتطبيق مقفول، وما تقفلش USB debugging قبلها.** قبل الصلاة الجاية بدقيقتين، والتلفزيون شغال ومفيش كارت كهف مفتوح، نفّذ `adb shell am kill app.noortv.kahf`. وقت الصلاة اسأله سمع الأذان وشاف الشريط ولا لأ، واتأكد إن منبّه `app.noortv.ADHAN` اتنقل للصلاة اللي بعدها. لو الأذان ما اشتغلش، دوّر على السبب:
+  ```sh
+  adb logcat -d | grep "appBootInfo.*noortv.Adhan"
+  ```
+  لو ظهر `callee_does't_have_OP_ASSOC_START_permission`، يبقى التلفزيون منع المنبّه: افتح `APP_ASSOC_START` بـ`adb shell cmd appops set app.noortv.kahf APP_ASSOC_START allow`، وبعدها `adb shell am broadcast -n app.noortv.kahf/app.noortv.Reminder` عشان يتسجل المنبّه من جديد.
 
 ### 10. اقفل واديله التقرير
 - بعد إذنه: `adb shell settings put global adb_enabled 0`، واتأكد إن بورت 5555 اتقفل. الكروت والأذان هيفضلوا شغالين.
