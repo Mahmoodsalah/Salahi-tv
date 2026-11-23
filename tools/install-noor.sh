@@ -16,7 +16,7 @@ for f in kahf baqara sabah masa ruqya; do
 done
 adb -s "$D" shell appops set app.noortv.kahf SYSTEM_ALERT_WINDOW allow
 adb -s "$D" shell appops set app.noortv.kahf GET_USAGE_STATS allow
-# Some TVs (TCL among them) block apps from starting at boot, which would lose the adhan alarm after a restart.
-adb -s "$D" shell 'cmd appops set app.noortv.kahf APP_AUTO_START allow 2>/dev/null; appops write-settings 2>/dev/null' || true
+# Some TVs (TCL among them) block a closed app from starting at boot or from its own alarm, which loses the adhan.
+adb -s "$D" shell 'cmd appops set app.noortv.kahf APP_AUTO_START allow 2>/dev/null; cmd appops set app.noortv.kahf APP_ASSOC_START allow 2>/dev/null; appops write-settings 2>/dev/null' || true
 sleep 8 # Android restarts the app right after an update, so start it once that has settled
 adb -s "$D" shell am broadcast -n app.noortv.kahf/app.noortv.Reminder >/dev/null

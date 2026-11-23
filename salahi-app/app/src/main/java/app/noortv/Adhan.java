@@ -49,6 +49,7 @@ public class Adhan extends BroadcastReceiver {
     /** The TV's own app for HDMI and channels. */
     static final String INPUTS = "com.tcl.tv";
     private static final int BANNER_MS = 30_000;
+    private static final String ARMED = "armed";
     private static final AudioAttributes ATTRIBUTES = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();
 
@@ -88,6 +89,13 @@ public class Adhan extends BroadcastReceiver {
         PendingIntent pi = PendingIntent.getBroadcast(c, 1, fire,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         c.getSystemService(AlarmManager.class).setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pi);
+        c.getSharedPreferences("adhan", Context.MODE_PRIVATE).edit().putLong(ARMED, when).apply();
+    }
+
+    /** Each adhan arms the next, so one the TV blocked or an offline start would end the chain. This restarts it. */
+    static void rearmIfLost(Context c) {
+        long armed = c.getSharedPreferences("adhan", Context.MODE_PRIVATE).getLong(ARMED, 0);
+        if (System.currentTimeMillis() > armed + 60_000) schedule(c);
     }
 
     /** "HH:mm" for Fajr..Isha on that day, from Aladhan (noor.method), cached per day and method for offline days. */
@@ -134,7 +142,7 @@ public class Adhan extends BroadcastReceiver {
         stop();
         MediaPlayer full = raw == 0 ? null : open(app, raw);
         if (full == null) {
-            banner(app, text, BANNER_MS);
+            banner(app, text, BANNER_MS, false, false);
             return;
         }
         player = full;
@@ -145,7 +153,7 @@ public class Adhan extends BroadcastReceiver {
         audio.requestAudioFocus(focus);
         full.setOnCompletionListener(mp -> stop());
         full.start();
-        banner(app, text, onHome ? full.getDuration() : BANNER_MS, onHome);
+        banner(app, text, onHome ? full.getDuration() : BANNER_MS, onHome, true);
         watch(app, full);
     }
 
@@ -224,12 +232,11 @@ public class Adhan extends BroadcastReceiver {
         return top;
     }
 
-    private static void banner(Context c, String text, int ms) {
-        banner(c, text, ms, false);
-    }
-
-    /** holdScreen keeps the screensaver away for as long as the banner is up. */
-    private static void banner(Context c, String text, int ms, boolean holdScreen) {
+    /**
+     * holdScreen keeps the screensaver away for as long as the banner is up. whilePlaying leaves its window in place,
+     * invisible, until the adhan ends: a TV short of memory kills a background app with no window, and the sound with it.
+     */
+    private static void banner(Context c, String text, int ms, boolean holdScreen, boolean whilePlaying) {
         if (!Settings.canDrawOverlays(c)) return;
         Handler main = new Handler(Looper.getMainLooper());
         main.post(() -> {
@@ -264,11 +271,12 @@ public class Adhan extends BroadcastReceiver {
                 } catch (Exception ignored) {
                 }
             };
-            main.postDelayed(remove, ms);
-            if (holdScreen) {
+            Runnable hide = whilePlaying ? () -> v.setAlpha(0) : remove;
+            main.postDelayed(hide, ms);
+            if (whilePlaying) {
                 dismissBanner = () -> {
                     dismissBanner = null;
-                    main.removeCallbacks(remove);
+                    main.removeCallbacks(hide);
                     remove.run();
                 };
             }

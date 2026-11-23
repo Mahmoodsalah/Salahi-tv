@@ -45,6 +45,7 @@ public class Reminder extends BroadcastReceiver {
             Adhan.schedule(c);
             return;
         }
+        Adhan.rearmIfLost(c);
         if (!Settings.canDrawOverlays(c)) return;
         Context app = c.getApplicationContext();
         String top = Adhan.topApp(c);
